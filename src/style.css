@@ -151,10 +151,21 @@ button,
   cursor: pointer;
 }
 
+button.ghost,
 #vr-slot button {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
+}
+
+.vr-slot {
+  display: flex;
+  align-items: center;
+}
+
+body.in-xr #hud,
+body.in-xr .panel {
+  display: none;
 }
 
 .hint {

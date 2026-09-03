@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#05080f" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <title>Neon Range — 5-minute WebXR shooter</title>
   </head>
   <body>
@@ -31,12 +34,13 @@
         and play in five minutes.
       </p>
       <ul>
+        <li>Headset: Put on headset, then shoot the start plate.</li>
         <li>Desktop: click targets. Hold click to rapid-fire.</li>
-        <li>Headset: enter VR, aim the laser, squeeze trigger.</li>
       </ul>
       <div class="actions">
-        <button type="button" id="start">Start range</button>
-        <div id="vr-slot"></div>
+        <button type="button" id="headset">Put on headset</button>
+        <button type="button" id="start" class="ghost">Play on desktop</button>
+        <div id="vr-slot" class="vr-slot"></div>
       </div>
       <p class="hint" id="xr-hint"></p>
     </div>

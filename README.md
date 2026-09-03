@@ -1,40 +1,40 @@
 # Neon Range
 
-A seated WebXR target gallery — the shooting game you can actually make in about five minutes of design, and play in a 45-second round.
+A seated WebXR target gallery. Point a ray, pull the trigger, chase combo.
 
-No locomotion. No weapons locker. No multiplayer. You stand (or sit), point a ray, pull the trigger, and chase combo.
+## Play on a headset
 
-## Why this game
-
-WebXR shooting fantasies get expensive fast (full FPS, reloading, cover, IK hands). The slice that fits a short build is a **gallery range**:
-
-- Raycast from the controller (or the mouse)
-- Floating targets
-- Score + combo + a timer
-- Desktop fallback so you can test without a headset
-
-## Play
+WebXR needs a secure context. On the headset itself that means **HTTPS** (or `localhost`).
 
 ```bash
 npm install
-npm run dev
+npm run dev:headset
 ```
 
-Open the printed local URL. Click **Start range**, then click targets. Hold the mouse to rapid-fire.
+That serves HTTPS on port `43178`. In the Quest (or other XR) browser:
 
-If the browser exposes WebXR, use **Enter VR** and squeeze the controller trigger.
+1. Open the Network URL Vite prints (`https://<your-lan-ip>:43178`).
+2. Accept the self-signed certificate warning once.
+3. Tap **Put on headset** / **ENTER VR**.
+4. Aim the controller laser at **SHOOT TO START** and squeeze trigger.
 
-Headset testing usually needs HTTPS (or `localhost`). This repo serves HTTP for local preview; put it behind HTTPS when you take a Quest into the room.
+Quest Browser can also **Add to Apps** from the page menu so the range sits on the library shelf like a PWA.
+
+If you only want a desktop preview (HTTP):
+
+```bash
+npm run dev
+```
 
 ## Controls
 
 | Surface | Aim | Fire |
 | --- | --- | --- |
-| Desktop / phone | Mouse or tap | Click / hold |
-| Headset | Controller laser | Trigger (`select`) |
+| Headset | Controller laser | Trigger |
+| Desktop | Mouse | Click / hold |
 
-Round length is 45 seconds. Hits add combo; a miss resets it. Distant targets pay a small bonus.
+Round length is 45 seconds. Hits add combo; a miss resets it. Distant targets pay a small bonus. The HTML HUD hides in VR — score lives on the back-wall board.
 
 ## Stack
 
-Vite, TypeScript, Three.js (`WebGLRenderer.xr`, `VRButton`, XR controller models).
+Vite, TypeScript, Three.js (`WebGLRenderer.xr`, `local-floor`, VR controllers, haptics).

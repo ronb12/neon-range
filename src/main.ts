@@ -4,6 +4,7 @@ import { VRButton } from "three/addons/webxr/VRButton.js";
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { RangeAudio } from "./game/audio.ts";
 import { Hud } from "./game/hud.ts";
+import { WorldMenu } from "./game/worldMenu.ts";
 
 const ROUND_SECONDS = 45;
 const TARGET_COUNT = 8;
@@ -17,11 +18,14 @@ type Target = {
 
 const hud = new Hud();
 const audio = new RangeAudio();
+const worldMenu = new WorldMenu();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
+renderer.xr.setReferenceSpaceType("local-floor");
+renderer.xr.setFoveation(1);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
@@ -31,11 +35,9 @@ scene.background = new THREE.Color(0x05080f);
 scene.fog = new THREE.Fog(0x05080f, 8, 28);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 80);
-camera.position.set(0, 1.6, 0.4);
-
-const cameraRig = new THREE.Group();
-cameraRig.add(camera);
-scene.add(cameraRig);
+camera.position.set(0, 1.6, 0.35);
+scene.add(camera);
+scene.add(worldMenu.mesh);
 
 scene.add(new THREE.HemisphereLight(0x88c8ff, 0x0a1220, 0.7));
 const key = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -118,6 +120,12 @@ const targetGeo = new THREE.CircleGeometry(0.38, 32);
 const ringGeo = new THREE.RingGeometry(0.4, 0.46, 32);
 const targets: Target[] = [];
 
+function aimPoint() {
+  const pos = new THREE.Vector3();
+  camera.getWorldPosition(pos);
+  return pos;
+}
+
 function randomLane() {
   return {
     x: (Math.random() - 0.5) * 6.4,
@@ -163,10 +171,11 @@ function hideTarget(target: Target) {
 
 function spawnTarget(target: Target) {
   const lane = randomLane();
+  const eye = aimPoint();
   target.alive = true;
   target.mesh.visible = true;
   target.mesh.position.set(lane.x, lane.y, lane.z);
-  target.mesh.lookAt(cameraRig.position.x, lane.y, cameraRig.position.z);
+  target.mesh.lookAt(eye.x, lane.y, eye.z);
   const hue = Math.random() > 0.35 ? 0x39e7ff : 0xff4d8d;
   const mat = target.mesh.material as THREE.MeshStandardMaterial;
   mat.color.setHex(hue);
@@ -180,34 +189,57 @@ const targetMeshes = () => targets.filter((t) => t.alive).map((t) => t.mesh);
 
 const controllerFactory = new XRControllerModelFactory();
 const controllers: THREE.XRTargetRaySpace[] = [];
-const rays: THREE.Line[] = [];
+
+function haptic(controller: THREE.Object3D, strength = 0.65, ms = 35) {
+  const source = controller.userData.inputSource as XRInputSource | undefined;
+  const actuator = source?.gamepad?.hapticActuators?.[0];
+  void actuator?.pulse(strength, ms);
+}
 
 function setupController(index: number) {
   const controller = renderer.xr.getController(index);
-  cameraRig.add(controller);
   const geometry = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0, 0, 0),
     new THREE.Vector3(0, 0, -1),
   ]);
-  const line = new THREE.Line(
-    geometry,
-    new THREE.LineBasicMaterial({ color: 0x39e7ff }),
-  );
+  const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x39e7ff }));
   line.scale.z = 8;
   controller.add(line);
+  controller.addEventListener("connected", (event: { data?: XRInputSource }) => {
+    controller.userData.inputSource = event.data;
+  });
+  controller.addEventListener("disconnected", () => {
+    controller.userData.inputSource = undefined;
+  });
   controller.addEventListener("selectstart", () => fireFrom(controller));
+  scene.add(controller);
+
   const grip = renderer.xr.getControllerGrip(index);
   grip.add(controllerFactory.createControllerModel(grip));
-  cameraRig.add(grip);
+  scene.add(grip);
   controllers.push(controller);
-  rays.push(line);
 }
 
 setupController(0);
 setupController(1);
 
-const vrButton = VRButton.createButton(renderer);
+const sessionInit: XRSessionInit = {
+  optionalFeatures: ["local-floor", "bounded-floor", "hand-tracking", "layers"],
+};
+const vrButton = VRButton.createButton(renderer, sessionInit);
+vrButton.id = "enter-vr";
 hud.vrSlot.appendChild(vrButton);
+
+renderer.xr.addEventListener("sessionstart", () => {
+  document.body.classList.add("in-xr");
+  renderer.setPixelRatio(1);
+  worldMenu.setVisible(!playing);
+});
+renderer.xr.addEventListener("sessionend", () => {
+  document.body.classList.remove("in-xr");
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  worldMenu.setVisible(!playing);
+});
 
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
@@ -232,6 +264,7 @@ function resetRound() {
   timeLeft = ROUND_SECONDS;
   comboTimer = 0;
   playing = true;
+  worldMenu.setVisible(false);
   hud.setPlaying(true);
   targets.forEach(spawnTarget);
   hud.setStats(score, combo, timeLeft);
@@ -243,13 +276,15 @@ function finishRound() {
   pointerHeld = false;
   audio.end();
   targets.forEach(hideTarget);
+  worldMenu.showAgain(score);
+  worldMenu.setVisible(true);
   hud.setPlaying(false);
   hud.showEnd(score, hits, bestCombo);
   paintBoard(score, combo, 0);
 }
 
-function registerHit(target: Target) {
-  const bonus = target.mesh.position.distanceTo(cameraRig.position) > 7 ? 40 : 0;
+function registerHit(target: Target, controller?: THREE.Object3D) {
+  const bonus = target.mesh.position.distanceTo(aimPoint()) > 7 ? 40 : 0;
   score += 100 * combo + bonus;
   hits += 1;
   combo += 1;
@@ -257,15 +292,27 @@ function registerHit(target: Target) {
   comboTimer = 1.15;
   burst(target.mesh.position, 0xfff3a1);
   audio.hit(combo);
+  if (controller) haptic(controller, 0.85, 50);
   spawnTarget(target);
   hud.setStats(score, combo, timeLeft);
   paintBoard(score, combo, timeLeft);
 }
 
-function fireRay(origin: THREE.Vector3, direction: THREE.Vector3) {
-  if (!playing) return;
-  audio.fire();
+function fireRay(origin: THREE.Vector3, direction: THREE.Vector3, controller?: THREE.Object3D) {
   raycaster.set(origin, direction.normalize());
+
+  if (!playing) {
+    const menuHit = raycaster.intersectObject(worldMenu.mesh, false);
+    if (menuHit.length > 0 && worldMenu.mesh.visible) {
+      audio.fire();
+      if (controller) haptic(controller, 0.5, 40);
+      resetRound();
+    }
+    return;
+  }
+
+  audio.fire();
+  if (controller) haptic(controller, 0.25, 18);
   const hitsNow = raycaster.intersectObjects(targetMeshes(), false);
   if (hitsNow.length === 0) {
     audio.miss();
@@ -277,13 +324,13 @@ function fireRay(origin: THREE.Vector3, direction: THREE.Vector3) {
   }
   const mesh = hitsNow[0].object as THREE.Mesh;
   const target = targets.find((t) => t.mesh === mesh);
-  if (target) registerHit(target);
+  if (target) registerHit(target, controller);
 }
 
 function fireFrom(controller: THREE.Object3D) {
   tmpMatrix.identity().extractRotation(controller.matrixWorld);
   tmpDir.set(0, 0, -1).applyMatrix4(tmpMatrix);
-  fireRay(new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld), tmpDir);
+  fireRay(new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld), tmpDir, controller);
 }
 
 function fireFromPointer(clientX: number, clientY: number) {
@@ -298,10 +345,13 @@ document.querySelector("#start")!.addEventListener("click", () => {
   resetRound();
 });
 document.querySelector("#again")!.addEventListener("click", () => resetRound());
+document.querySelector("#headset")!.addEventListener("click", () => {
+  vrButton.click();
+});
 
 renderer.domElement.addEventListener("pointerdown", (event) => {
-  if (!playing || renderer.xr.isPresenting) return;
-  pointerHeld = true;
+  if (renderer.xr.isPresenting) return;
+  pointerHeld = playing;
   fireCooldown = 0;
   fireFromPointer(event.clientX, event.clientY);
 });
@@ -342,14 +392,17 @@ renderer.setAnimationLoop(() => {
     hud.setStats(score, combo, timeLeft);
     paintBoard(score, combo, timeLeft);
 
+    const eye = aimPoint();
     for (const target of targets) {
       if (!target.alive) continue;
       target.mesh.position.addScaledVector(target.velocity, dt);
       if (Math.abs(target.mesh.position.x) > 3.5) target.velocity.x *= -1;
       if (target.mesh.position.y < 0.9 || target.mesh.position.y > 2.9) target.velocity.y *= -1;
-      target.mesh.lookAt(camera.position.x, target.mesh.position.y, camera.position.z);
+      target.mesh.lookAt(eye.x, target.mesh.position.y, eye.z);
       target.ring.rotation.z += dt * 1.6;
     }
+  } else if (worldMenu.mesh.visible) {
+    worldMenu.mesh.lookAt(aimPoint());
   }
 
   for (let i = sparkLife.length - 1; i >= 0; i--) {

@@ -29,7 +29,7 @@ export class Hud {
 
   setXrHint(supported: boolean) {
     this.xrHint.textContent = supported
-      ? "WebXR is available. Enter VR for controller lasers."
-      : "No headset on this device — desktop click-to-shoot is live.";
+      ? "This browser can enter VR. Put the headset on, then shoot the start plate."
+      : "Open this page in the Quest (or other XR) browser over HTTPS, then tap Put on headset.";
   }
 }
