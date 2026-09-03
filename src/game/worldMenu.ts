@@ -26,7 +26,7 @@ export class WorldMenu {
   }
 
   showIdle(best: number) {
-    this.paint("SHOOT TO START", best > 0 ? `House best ${best}` : "Cyan hits. Gold pays. Center pays more.");
+    this.paint("SHOOT TO START", best > 0 ? `House best ${best}` : "Laser on. Gold pays. Skip the marked plates.");
   }
 
   showCountdown(n: number) {
