@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Neon Range — 5-minute WebXR shooter</title>
+  </head>
+  <body>
+    <div id="hud">
+      <div class="brand">
+        <span class="mark">XR</span>
+        <div>
+          <strong>Neon Range</strong>
+          <small>Seated target gallery</small>
+        </div>
+      </div>
+      <div class="stats">
+        <div><label>Score</label><b id="score">0</b></div>
+        <div><label>Combo</label><b id="combo">x1</b></div>
+        <div><label>Time</label><b id="time">45</b></div>
+      </div>
+    </div>
+
+    <div id="overlay" class="panel">
+      <p class="eyebrow">The 5-minute WebXR shooter</p>
+      <h1>Point. Trigger. Score.</h1>
+      <p class="lede">
+        A seated gallery range — no locomotion, no inventory, no netcode.
+        This is the shooting game you can actually ship in WebXR in an afternoon,
+        and play in five minutes.
+      </p>
+      <ul>
+        <li>Desktop: click targets. Hold click to rapid-fire.</li>
+        <li>Headset: enter VR, aim the laser, squeeze trigger.</li>
+      </ul>
+      <div class="actions">
+        <button type="button" id="start">Start range</button>
+        <div id="vr-slot"></div>
+      </div>
+      <p class="hint" id="xr-hint"></p>
+    </div>
+
+    <div id="end" class="panel hidden">
+      <p class="eyebrow">Range closed</p>
+      <h1 id="end-title">Clean run.</h1>
+      <p class="lede" id="end-copy"></p>
+      <div class="actions">
+        <button type="button" id="again">Shoot again</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
