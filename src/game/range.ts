@@ -54,7 +54,7 @@ export function buildRange(scene: THREE.Scene) {
     scene.add(hoop);
   }
 
-  const sign = makeSign("LIVE FIRE");
+  const sign = makeSign("RANGE OPEN");
   sign.position.set(-5.4, 2.4, -8.8);
   sign.rotation.y = 0.4;
   scene.add(sign);

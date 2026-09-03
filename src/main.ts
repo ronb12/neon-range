@@ -523,7 +523,7 @@ renderer.setAnimationLoop(() => {
     if (!renderer.xr.isPresenting) fireCooldown -= dt;
     if (comboTimer <= 0) combo = 1;
     if (timeLeft <= 0) finishRound();
-    syncHud(timeLeft <= 10 ? "DUMP IT" : "NEON RANGE");
+    syncHud(timeLeft <= 10 ? "FINAL 10" : "NEON RANGE");
 
     const eye = aimPoint();
     const haste = 1 + (ROUND_SECONDS - timeLeft) * 0.018;

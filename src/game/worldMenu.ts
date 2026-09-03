@@ -30,7 +30,7 @@ export class WorldMenu {
   }
 
   showCountdown(n: number) {
-    this.paint(n > 0 ? String(n) : "LIVE", n > 0 ? "Hold still. Then dump the lane." : "Trigger is hot.");
+    this.paint(n > 0 ? String(n) : "LIVE", n > 0 ? "Hold still. Then clear the plates." : "Trigger is live.");
   }
 
   showAgain(score: number, best: number, record: boolean) {

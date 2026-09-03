@@ -10,7 +10,7 @@ Forty-five seconds, then the lane goes dark.
 - **Gold plates** — farther, faster, pay 250 × combo
 - **Pink rush plates** — they charge you and vanish if you wait
 - **White core** — bullseye bonus
-- Misses dump the combo. House best is saved in the browser.
+- Misses reset the combo. House best is saved in the browser.
 
 A 3-2-1 countdown starts every run, including when you **Enter VR** with a connected headset.
 
