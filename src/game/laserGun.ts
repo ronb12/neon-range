@@ -10,12 +10,12 @@ export class LaserGun {
   private readonly rest = new THREE.Vector3(0, -0.04, 0.02);
 
   constructor(model: THREE.Group) {
-    this.root = instance(model, 0.85);
+    this.root = instance(model, 0.42);
     this.root.rotation.set(0, Math.PI, 0);
     this.root.position.set(0, -0.04, 0.02);
 
     this.muzzle = new THREE.Object3D();
-    this.muzzle.position.set(0, 0.045, -0.28);
+    this.muzzle.position.set(0, 0.028, -0.16);
     this.root.add(this.muzzle);
 
     this.flash = new THREE.PointLight(0x7af6ff, 0, 1.6);
@@ -58,5 +58,5 @@ export class LaserGun {
 }
 
 export async function loadLaserGunModel() {
-  return loadModel("/assets/models/blaster-g.glb");
+  return loadModel("/assets/models/blaster/blaster-g.glb");
 }

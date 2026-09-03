@@ -5,7 +5,6 @@ import { RangeAudio } from "./game/audio.ts";
 import { Fx } from "./game/fx.ts";
 import { Hud } from "./game/hud.ts";
 import { LaserGun, loadLaserGunModel } from "./game/laserGun.ts";
-import { instance, loadModel } from "./game/loader.ts";
 import { buildRange, loadBest, saveBest } from "./game/range.ts";
 import { WorldMenu } from "./game/worldMenu.ts";
 import { headsetAvailable, startHeadsetSession, watchHeadset } from "./game/xr.ts";
@@ -37,14 +36,15 @@ renderer.toneMappingExposure = 1.08;
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070b12);
-scene.fog = new THREE.Fog(0x070b12, 10, 32);
+scene.background = new THREE.Color(0x05080f);
+scene.fog = new THREE.Fog(0x05080f, 8, 28);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 80);
 camera.position.set(0, 1.6, 0.45);
 scene.add(camera);
 scene.add(worldMenu.mesh);
 
+const lights = buildRange(scene);
 const fx = new Fx(scene);
 const boardCanvas = document.createElement("canvas");
 boardCanvas.width = 1024;
@@ -59,7 +59,6 @@ board.position.set(0, 3.2, -9.85);
 scene.add(board);
 
 let best = loadBest();
-let lights = { accent: new THREE.PointLight(), hot: new THREE.PointLight() };
 let hitStop = 0;
 
 function paintBoard(score: number, combo: number, time: number, title = "NEON RANGE") {
@@ -91,45 +90,65 @@ function aimPoint() {
   return pos;
 }
 
-function tint(root: THREE.Object3D, hex: number, emissive = 0.35) {
-  root.traverse((child) => {
-    if (child instanceof THREE.Mesh && child.material) {
-      const mat = child.material as THREE.MeshStandardMaterial;
-      if (mat.color) mat.color.setHex(hex);
-      if ("emissive" in mat && mat.emissive) {
-        mat.emissive.setHex(hex);
-        mat.emissiveIntensity = emissive;
-      }
-    }
-  });
-}
-
-function markDecoy(root: THREE.Object3D) {
-  const x = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.55, 0.55),
-    new THREE.MeshBasicMaterial({ color: 0x111111, side: THREE.DoubleSide }),
+function makePlate(kind: Kind) {
+  const group = new THREE.Group();
+  const radius = kind === "rush" ? 0.28 : kind === "gold" ? 0.32 : 0.38;
+  const hue =
+    kind === "gold"
+      ? 0xffd166
+      : kind === "rush"
+        ? 0xff4d8d
+        : kind === "decoy"
+          ? 0x3a4450
+          : Math.random() > 0.45
+            ? 0x39e7ff
+            : 0x7af0c8;
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 32),
+    new THREE.MeshStandardMaterial({
+      color: hue,
+      emissive: hue,
+      emissiveIntensity: kind === "decoy" ? 0.08 : 0.58,
+      roughness: 0.32,
+      metalness: 0.22,
+      side: THREE.DoubleSide,
+    }),
   );
-  const bar = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.5, 0.08),
-    new THREE.MeshBasicMaterial({ color: 0xff3355, side: THREE.DoubleSide }),
+  const core = new THREE.Mesh(
+    new THREE.CircleGeometry(radius * 0.34, 24),
+    new THREE.MeshBasicMaterial({
+      color: kind === "decoy" ? 0x111111 : 0xffffff,
+      side: THREE.DoubleSide,
+    }),
   );
-  bar.rotation.z = Math.PI / 4;
-  const bar2 = bar.clone();
-  bar2.rotation.z = -Math.PI / 4;
-  x.position.set(0, 0.7, 0.12);
-  x.add(bar, bar2);
-  root.add(x);
+  core.position.z = 0.012;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(radius + 0.02, radius + 0.07, 32),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }),
+  );
+  group.add(disc, core, ring);
+  if (kind === "decoy") {
+    const bar = new THREE.Mesh(
+      new THREE.PlaneGeometry(radius * 1.5, 0.055),
+      new THREE.MeshBasicMaterial({ color: 0xff3355, side: THREE.DoubleSide }),
+    );
+    bar.rotation.z = Math.PI / 4;
+    bar.position.z = 0.02;
+    const bar2 = bar.clone();
+    bar2.rotation.z = -Math.PI / 4;
+    group.add(bar, bar2);
+  }
+  group.userData.ring = ring;
+  return group;
 }
 
 const targets: Target[] = [];
-let targetLarge: THREE.Group;
-let targetSmall: THREE.Group;
 
 function randomLane(kind: Kind) {
   return {
-    x: (Math.random() - 0.5) * (kind === "rush" ? 7 : 6),
-    y: 0,
-    z: kind === "gold" ? -7.2 - Math.random() * 2.4 : -4.4 - Math.random() * 4,
+    x: (Math.random() - 0.5) * (kind === "rush" ? 6.8 : 6.2),
+    y: 1.05 + Math.random() * 1.65,
+    z: kind === "gold" ? -6.6 - Math.random() * 2.8 : -4.2 - Math.random() * 4.2,
   };
 }
 
@@ -168,28 +187,21 @@ function spawnTarget(target: Target) {
   target.kind = live ? pickKind() : "standard";
   const lane = randomLane(target.kind);
   hideTarget(target);
-  const src = target.kind === "standard" ? targetLarge : targetSmall;
-  const body = instance(src, target.kind === "gold" ? 0.85 : 1);
-  target.root.add(body);
-  if (target.kind === "gold") tint(body, 0xffd166, 0.45);
-  else if (target.kind === "rush") tint(body, 0xff4d8d, 0.5);
-  else if (target.kind === "decoy") {
-    tint(body, 0x334455, 0.05);
-    markDecoy(target.root);
-  } else tint(body, 0x39e7ff, 0.28);
-
+  const plate = makePlate(target.kind);
+  target.root.add(plate);
+  target.root.userData.ring = plate.userData.ring;
   target.alive = true;
   target.root.visible = true;
-  target.destY = 0;
-  target.root.position.set(lane.x, -0.85, lane.z);
+  target.destY = lane.y;
+  target.root.position.set(lane.x, lane.y - 0.7, lane.z);
   if (target.kind === "rush") {
-    target.velocity.set((Math.random() > 0.5 ? 1 : -1) * 2.8, 0, 1.15);
+    target.velocity.set((Math.random() > 0.5 ? 1 : -1) * 2.6, (Math.random() - 0.5) * 0.4, 1.1);
     target.life = 3.2;
   } else if (target.kind === "gold") {
-    target.velocity.set((Math.random() - 0.5) * 2.2, 0, 0);
+    target.velocity.set((Math.random() - 0.5) * 2.1, (Math.random() - 0.5) * 0.7, 0);
     target.life = 99;
   } else {
-    target.velocity.set((Math.random() - 0.5) * 0.9, 0, 0);
+    target.velocity.set((Math.random() - 0.5) * 1.1, (Math.random() - 0.5) * 0.45, 0);
     target.life = 99;
   }
 }
@@ -562,9 +574,12 @@ function tick() {
         target.root.position.y = Math.min(target.destY, target.root.position.y + dt * 3.4);
       }
       target.root.position.addScaledVector(target.velocity, dt * haste);
-      if (Math.abs(target.root.position.x) > 3.8) target.velocity.x *= -1;
-      if (target.root.position.z > -3.3) target.velocity.z = -Math.abs(target.velocity.z);
-      target.root.lookAt(eye.x, target.root.position.y + 0.6, eye.z);
+      if (Math.abs(target.root.position.x) > 3.6) target.velocity.x *= -1;
+      if (target.root.position.y < 0.9 || target.root.position.y > 2.9) target.velocity.y *= -1;
+      if (target.root.position.z > -3.2) target.velocity.z = -Math.abs(target.velocity.z);
+      target.root.lookAt(eye.x, target.root.position.y, eye.z);
+      const ring = target.root.userData.ring as THREE.Object3D | undefined;
+      if (ring) ring.rotation.z += dt * (target.kind === "gold" ? 3.2 : 1.6);
       if (target.life <= 0) spawnTarget(target);
     }
   } else if (worldMenu.mesh.visible) {
@@ -576,17 +591,8 @@ function tick() {
 }
 
 async function boot() {
-  hud.setHeadsetState("checking", "Loading Kenney range assets…");
-  const [gunModel, large, small, built] = await Promise.all([
-    loadLaserGunModel(),
-    loadModel("/assets/models/target-large.glb"),
-    loadModel("/assets/models/target-small.glb"),
-    buildRange(scene),
-    audio.load(),
-  ]);
-  lights = built;
-  targetLarge = large;
-  targetSmall = small;
+  hud.setHeadsetState("checking", "Loading the laser…");
+  const [gunModel] = await Promise.all([loadLaserGunModel(), audio.load()]);
   setupController(0, gunModel);
   setupController(1, gunModel);
   desktopGun = new LaserGun(gunModel);

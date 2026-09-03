@@ -1,90 +1,86 @@
 import * as THREE from "three";
-import { loadModel, place } from "./loader.ts";
 
-export async function buildRange(scene: THREE.Scene) {
-  const [
-    floor,
-    floorPanel,
-    wall,
-    wallDetail,
-    wallWindow,
-    pillar,
-    rail,
-    crateM,
-    crateS,
-    computer,
-    computerWide,
-    door,
-    barrier,
-    pipe,
-    display,
-  ] = await Promise.all([
-    loadModel("/assets/models/floor.glb"),
-    loadModel("/assets/models/floor-panel.glb"),
-    loadModel("/assets/models/wall.glb"),
-    loadModel("/assets/models/wall-detail.glb"),
-    loadModel("/assets/models/wall-window.glb"),
-    loadModel("/assets/models/wall-pillar.glb"),
-    loadModel("/assets/models/rail.glb"),
-    loadModel("/assets/models/crate-medium.glb"),
-    loadModel("/assets/models/crate-small.glb"),
-    loadModel("/assets/models/computer.glb"),
-    loadModel("/assets/models/computer-wide.glb"),
-    loadModel("/assets/models/door-single-closed.glb"),
-    loadModel("/assets/models/structure-barrier.glb"),
-    loadModel("/assets/models/pipe.glb"),
-    loadModel("/assets/models/display-wall.glb"),
-  ]);
-
-  const tile = 2;
-  for (let x = -4; x <= 4; x++) {
-    for (let z = -5; z <= 1; z++) {
-      const src = (x + z) % 2 === 0 ? floor : floorPanel;
-      place(scene, src, x * tile, 0, z * tile, 0, 1);
-    }
-  }
-
-  for (let x = -4; x <= 4; x++) {
-    const src = x === 0 ? wallWindow : x % 2 === 0 ? wallDetail : wall;
-    place(scene, src, x * tile, 0, -10.2, 0, 1);
-  }
-  place(scene, pillar, -8.2, 0, -10.2, 0, 1);
-  place(scene, pillar, 8.2, 0, -10.2, 0, 1);
-  place(scene, door, -8.2, 0, -6, Math.PI / 2, 1);
-  place(scene, door, 8.2, 0, -6, -Math.PI / 2, 1);
-
-  for (const x of [-4.2, 4.2]) {
-    place(scene, rail, x, 0, -4.5, 0, 1);
-    place(scene, rail, x, 0, -6.5, 0, 1);
-  }
-
-  place(scene, barrier, -1.4, 0, -1.6, 0, 0.85);
-  place(scene, barrier, 1.4, 0, -1.6, 0, 0.85);
-
-  place(scene, crateM, -3.2, 0, -3.4, 0.2, 1);
-  place(scene, crateS, 3.1, 0, -3.2, -0.3, 1);
-  place(scene, crateM, 0.2, 0, -8.6, 0.1, 1);
-
-  place(scene, computerWide, -6.6, 0, -8.8, 0.4, 1);
-  place(scene, computer, 6.6, 0, -8.8, -0.4, 1);
-  place(scene, display, 0, 1.1, -10.05, 0, 1.2);
-
-  for (const x of [-6, -2, 2, 6]) {
-    place(scene, pipe, x, 2.7, -9.4, Math.PI / 2, 1);
-  }
-
-  scene.add(new THREE.HemisphereLight(0x9ad4ff, 0x121820, 0.7));
+export function buildRange(scene: THREE.Scene) {
+  scene.add(new THREE.HemisphereLight(0x88c8ff, 0x0a1220, 0.7));
   const key = new THREE.DirectionalLight(0xffffff, 1.05);
-  key.position.set(-3, 7, 2);
+  key.position.set(-2, 6, 3);
   scene.add(key);
-  const accent = new THREE.PointLight(0x39e7ff, 12, 18);
-  accent.position.set(-3.4, 2.4, -5);
+
+  const accent = new THREE.PointLight(0x39e7ff, 11, 18);
+  accent.position.set(-3.2, 2.5, -5);
   scene.add(accent);
   const hot = new THREE.PointLight(0xff4d8d, 10, 16);
-  hot.position.set(3.4, 2.4, -5);
+  hot.position.set(3.2, 2.5, -5);
   scene.add(hot);
 
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(10, 48),
+    new THREE.MeshStandardMaterial({ color: 0x0b1420, roughness: 0.92, metalness: 0.05 }),
+  );
+  floor.rotation.x = -Math.PI / 2;
+  scene.add(floor);
+
+  const grid = new THREE.GridHelper(16, 24, 0x1b4d66, 0x102433);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  const back = new THREE.Mesh(
+    new THREE.PlaneGeometry(16, 8),
+    new THREE.MeshStandardMaterial({ color: 0x081018, roughness: 1 }),
+  );
+  back.position.set(0, 3.2, -10.5);
+  scene.add(back);
+
+  const railMat = new THREE.MeshStandardMaterial({
+    color: 0x102030,
+    emissive: 0x39e7ff,
+    emissiveIntensity: 0.22,
+    roughness: 0.4,
+  });
+  for (const x of [-4.4, 4.4]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.4, 8.5), railMat);
+    rail.position.set(x, 1.3, -5.2);
+    scene.add(rail);
+  }
+
+  const neon = new THREE.MeshStandardMaterial({
+    color: 0xff4d8d,
+    emissive: 0xff4d8d,
+    emissiveIntensity: 0.95,
+  });
+  for (let i = 0; i < 5; i++) {
+    const hoop = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.03, 8, 24), neon);
+    hoop.position.set(-6.2 + i * 3.1, 3.8, -9.6);
+    scene.add(hoop);
+  }
+
+  scene.add(makeSign("RANGE OPEN", -5.4, 2.4, -8.8, 0.4));
+  scene.add(makeSign("KEEP COMBO", 5.4, 2.4, -8.8, -0.4));
+
   return { accent, hot };
+}
+
+function makeSign(text: string, x: number, y: number, z: number, rotY: number) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#071018";
+  ctx.fillRect(0, 0, 512, 128);
+  ctx.strokeStyle = "#39e7ff";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(8, 8, 496, 112);
+  ctx.fillStyle = "#39e7ff";
+  ctx.font = "bold 48px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(text, 256, 82);
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.8, 0.45),
+    new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas) }),
+  );
+  mesh.position.set(x, y, z);
+  mesh.rotation.y = rotY;
+  return mesh;
 }
 
 const BEST_KEY = "neon-range-best";
