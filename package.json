@@ -1,5 +1,5 @@
 {
-  "name": "webxr-target-range",
+  "name": "neon-range",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -18,5 +18,5 @@
   "dependencies": {
     "three": "^0.185.1"
   },
-  "description": "Seated WebXR target-range shooter"
+  "description": "Neon Range — a seated WebXR laser target gallery"
 }
