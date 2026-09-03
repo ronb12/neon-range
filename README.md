@@ -24,4 +24,4 @@ Chrome or Edge at `http://localhost:43177`. Enter VR with a connected headset, o
 
 ## How it plays
 
-3-2-1, then 45 seconds. Laser leaves the barrel. Hits flash and hang a score. Misses scorch the back wall. Gold pays more. Rush plates charge you. Marked plates dump the combo.
+3-2-1, then 45 seconds. Walk the stall (WASD or left stick), snap-turn (Q/E or right stick), then fire. Gold pays more. Rush plates charge you. Marked plates reset the combo.

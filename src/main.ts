@@ -5,6 +5,7 @@ import { RangeAudio } from "./game/audio.ts";
 import { Fx } from "./game/fx.ts";
 import { Hud } from "./game/hud.ts";
 import { LaserGun, loadLaserGunModel } from "./game/laserGun.ts";
+import { Locomotion } from "./game/move.ts";
 import { buildRange, loadBest, saveBest } from "./game/range.ts";
 import { WorldMenu } from "./game/worldMenu.ts";
 import { headsetAvailable, startHeadsetSession, watchHeadset } from "./game/xr.ts";
@@ -39,12 +40,16 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05080f);
 scene.fog = new THREE.Fog(0x05080f, 8, 28);
 
+const rig = new THREE.Group();
+scene.add(rig);
+
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 80);
-camera.position.set(0, 1.6, 0.45);
-scene.add(camera);
-scene.add(worldMenu.mesh);
+camera.position.set(0, 1.6, 0.2);
+rig.add(camera);
+rig.add(worldMenu.mesh);
 
 const lights = buildRange(scene);
+const move = new Locomotion(rig);
 const fx = new Fx(scene);
 const boardCanvas = document.createElement("canvas");
 boardCanvas.width = 1024;
@@ -253,10 +258,10 @@ function setupController(index: number, gunModel: THREE.Group) {
   });
   controller.addEventListener("selectstart", () => fireFrom(controller));
   controller.addEventListener("squeezestart", () => fireFrom(controller));
-  scene.add(controller);
+  rig.add(controller);
   const grip = renderer.xr.getControllerGrip(index);
   grip.add(controllerFactory.createControllerModel(grip));
-  scene.add(grip);
+  rig.add(grip);
   controllers.push(controller);
   lasers.push(line);
 }
@@ -524,9 +529,9 @@ function tick() {
     dt *= 0.15;
   }
 
-  const pulse = 0.65 + Math.sin(clock.elapsedTime * (live && timeLeft <= 10 ? 8 : 2)) * 0.35;
-  lights.hot.intensity = 8 + pulse * 4;
-  lights.accent.intensity = 8 + (1 - pulse) * 3;
+  lights.update(clock.elapsedTime, dt, live && timeLeft <= 10);
+  const pads = controllers.map((c) => (c.userData.inputSource as XRInputSource | undefined)?.gamepad);
+  move.update(dt, camera, renderer.xr.isPresenting, pads);
   desktopGun?.update(dt);
   for (const gun of guns.values()) gun.update(dt);
 

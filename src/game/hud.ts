@@ -69,7 +69,8 @@ export class Hud {
       return;
     }
     if (state === "ready") {
-      this.xrHint.textContent = "Headset is on this computer. Enter VR and the countdown starts in the HMD.";
+      this.xrHint.textContent =
+        "Headset is on this computer. Enter VR. Left stick walks, right stick snap-turns.";
     } else if (state === "presenting") {
       this.xrHint.textContent = "Trigger shoots. Gold plates pay more. Center hits pay extra.";
     } else if (state === "insecure") {
