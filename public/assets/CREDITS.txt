@@ -1,6 +1,5 @@
 Kenney.nl assets (CC0 1.0):
-- Blaster Kit
-- Space Station Kit
-- Prototype Textures
-- Sci-Fi Sounds
+- Blaster Kit — laser (blaster-g) and colormap
+- Sci-Fi Sounds — laser and impact one-shots
+
 https://kenney.nl — attribution appreciated, not required.
