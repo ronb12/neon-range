@@ -11,11 +11,13 @@ export class LaserGun {
 
   constructor(model: THREE.Group) {
     this.root = instance(model, 0.42);
-    this.root.rotation.set(0, Math.PI, 0);
-    this.root.position.set(0, -0.04, 0.02);
+    // No flip — barrel already faces -Z (forward) in the Kenney GLB
+    this.root.rotation.set(0, 0, 0);
+    this.root.position.set(0, -0.04, -0.06);
 
     this.muzzle = new THREE.Object3D();
-    this.muzzle.position.set(0, 0.028, -0.16);
+    // Barrel tip is roughly 0.22 m forward of the grip centre at model scale 0.42
+    this.muzzle.position.set(0, 0.028, -0.22);
     this.root.add(this.muzzle);
 
     this.flash = new THREE.PointLight(0x7af6ff, 0, 1.6);
@@ -34,9 +36,10 @@ export class LaserGun {
   }
 
   setDesktopPose() {
-    this.rest.set(0.22, -0.2, -0.38);
+    // Lower-right viewmodel: slightly tilted, barrel pointing forward (-Z)
+    this.rest.set(0.18, -0.18, -0.32);
     this.root.position.copy(this.rest);
-    this.root.rotation.set(-0.08, Math.PI + 0.12, 0.04);
+    this.root.rotation.set(-0.06, 0.12, 0.04);
   }
 
   kick() {

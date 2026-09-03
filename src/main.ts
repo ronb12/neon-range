@@ -240,9 +240,10 @@ function haptic(controller: THREE.Object3D | undefined, strength = 0.65, ms = 35
 
 function setupController(index: number, gunModel: THREE.Group) {
   const controller = renderer.xr.getController(index);
+  // Laser line originates at the muzzle offset (0, 0.028, -0.22) and extends forward
   const geometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(0, 0, 0),
-    new THREE.Vector3(0, 0, -1),
+    new THREE.Vector3(0, 0.028, -0.22),
+    new THREE.Vector3(0, 0.028, -1),
   ]);
   const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x39e7ff }));
   line.scale.z = 9;
