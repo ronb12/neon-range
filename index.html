@@ -10,6 +10,8 @@
     <title>Neon Range — 5-minute WebXR shooter</title>
   </head>
   <body>
+    <div id="crosshair"></div>
+    <div id="toast"></div>
     <div id="hud">
       <div class="brand">
         <span class="mark">XR</span>
@@ -20,7 +22,9 @@
       </div>
       <div class="stats">
         <div><label>Score</label><b id="score">0</b></div>
+        <div><label>Best</label><b id="best">0</b></div>
         <div><label>Combo</label><b id="combo">x1</b></div>
+        <div><label>Acc</label><b id="acc">100%</b></div>
         <div><label>Time</label><b id="time">45</b></div>
       </div>
     </div>
@@ -28,14 +32,14 @@
     <div id="overlay" class="panel">
       <p class="eyebrow">The 5-minute WebXR shooter</p>
       <p id="xr-status" class="status" data-state="checking">Looking for a headset…</p>
-      <h1>Point. Trigger. Score.</h1>
+      <h1>Dump the lane.</h1>
       <p class="lede">
-        If the headset is already connected to this computer, click Enter VR.
-        The range starts in the headset — trigger to shoot.
+        Forty-five seconds. Cyan plates are work. Gold plates are money.
+        Hit the center and the combo stays loud.
       </p>
       <ul>
-        <li>Connected HMD: Chrome or Edge, headset awake, then Enter VR.</li>
-        <li>Desktop only: Play on desktop and click targets.</li>
+        <li>Headset: Enter VR — countdown, then trigger.</li>
+        <li>Desktop: Play on desktop, click or hold to fire.</li>
       </ul>
       <div class="actions">
         <button type="button" id="headset">Enter VR</button>

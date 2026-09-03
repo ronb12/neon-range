@@ -89,6 +89,52 @@ label {
   font-variant-numeric: tabular-nums;
 }
 
+body.urgent .stats b:last-child,
+body.urgent #time {
+  color: var(--hot);
+}
+
+#crosshair {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px #041018;
+}
+
+body.playing:not(.in-xr) #crosshair {
+  display: block;
+}
+
+#toast {
+  position: fixed;
+  left: 50%;
+  top: 22%;
+  transform: translate(-50%, -8px);
+  z-index: 4;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+#toast.show {
+  opacity: 1;
+}
+
 .panel {
   position: fixed;
   z-index: 3;
@@ -178,7 +224,9 @@ button:disabled {
 }
 
 body.in-xr #hud,
-body.in-xr .panel {
+body.in-xr .panel,
+body.in-xr #toast,
+body.in-xr #crosshair {
   display: none;
 }
 
