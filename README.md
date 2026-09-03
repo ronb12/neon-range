@@ -13,6 +13,16 @@ The range itself is the original neon gallery (not the Space Station tile kit). 
 
 Attribution is appreciated, not required.
 
+## Deploy
+
+This is a static Vite app. On Vercel, import the GitHub repo (framework: Vite). Production URL will serve HTTPS, which WebXR needs off localhost.
+
+```bash
+npm i -g vercel
+vercel login
+vercel --prod
+```
+
 ## Play
 
 ```bash
