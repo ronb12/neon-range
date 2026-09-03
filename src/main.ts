@@ -1,10 +1,10 @@
 import "./style.css";
 import * as THREE from "three";
-import { VRButton } from "three/addons/webxr/VRButton.js";
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { RangeAudio } from "./game/audio.ts";
 import { Hud } from "./game/hud.ts";
 import { WorldMenu } from "./game/worldMenu.ts";
+import { headsetAvailable, startHeadsetSession, watchHeadset } from "./game/xr.ts";
 
 const ROUND_SECONDS = 45;
 const TARGET_COUNT = 8;
@@ -24,7 +24,6 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
-renderer.xr.setReferenceSpaceType("local-floor");
 renderer.xr.setFoveation(1);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
@@ -212,6 +211,7 @@ function setupController(index: number) {
     controller.userData.inputSource = undefined;
   });
   controller.addEventListener("selectstart", () => fireFrom(controller));
+  controller.addEventListener("squeezestart", () => fireFrom(controller));
   scene.add(controller);
 
   const grip = renderer.xr.getControllerGrip(index);
@@ -223,22 +223,17 @@ function setupController(index: number) {
 setupController(0);
 setupController(1);
 
-const sessionInit: XRSessionInit = {
-  optionalFeatures: ["local-floor", "bounded-floor", "hand-tracking", "layers"],
-};
-const vrButton = VRButton.createButton(renderer, sessionInit);
-vrButton.id = "enter-vr";
-hud.vrSlot.appendChild(vrButton);
-
 renderer.xr.addEventListener("sessionstart", () => {
   document.body.classList.add("in-xr");
   renderer.setPixelRatio(1);
-  worldMenu.setVisible(!playing);
+  hud.setHeadsetState("presenting");
+  if (!playing) resetRound();
 });
 renderer.xr.addEventListener("sessionend", () => {
   document.body.classList.remove("in-xr");
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   worldMenu.setVisible(!playing);
+  void headsetAvailable().then((state) => hud.setHeadsetState(state));
 });
 
 const raycaster = new THREE.Raycaster();
@@ -328,6 +323,7 @@ function fireRay(origin: THREE.Vector3, direction: THREE.Vector3, controller?: T
 }
 
 function fireFrom(controller: THREE.Object3D) {
+  if (renderer.xr.isPresenting) fireCooldown = 0.12;
   tmpMatrix.identity().extractRotation(controller.matrixWorld);
   tmpDir.set(0, 0, -1).applyMatrix4(tmpMatrix);
   fireRay(new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld), tmpDir, controller);
@@ -346,8 +342,18 @@ document.querySelector("#start")!.addEventListener("click", () => {
 });
 document.querySelector("#again")!.addEventListener("click", () => resetRound());
 document.querySelector("#headset")!.addEventListener("click", () => {
-  vrButton.click();
+  void enterHeadset();
 });
+
+async function enterHeadset() {
+  hud.setHeadsetState("checking", "Starting the headset session…");
+  try {
+    await startHeadsetSession(renderer);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not enter VR.";
+    hud.setHeadsetState("unsupported", message);
+  }
+}
 
 renderer.domElement.addEventListener("pointerdown", (event) => {
   if (renderer.xr.isPresenting) return;
@@ -371,11 +377,7 @@ window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-void navigator.xr
-  ?.isSessionSupported("immersive-vr")
-  .then((ok) => hud.setXrHint(ok))
-  .catch(() => hud.setXrHint(false));
-if (!navigator.xr) hud.setXrHint(false);
+watchHeadset((state) => hud.setHeadsetState(state));
 
 const clock = new THREE.Clock();
 paintBoard(0, 1, ROUND_SECONDS);
@@ -383,10 +385,21 @@ paintBoard(0, 1, ROUND_SECONDS);
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
 
+  if (renderer.xr.isPresenting) {
+    fireCooldown -= dt;
+    for (const controller of controllers) {
+      const pad = (controller.userData.inputSource as XRInputSource | undefined)?.gamepad;
+      if (pad?.buttons[0]?.pressed && fireCooldown <= 0) {
+        fireFrom(controller);
+        fireCooldown = 0.12;
+      }
+    }
+  }
+
   if (playing) {
     timeLeft -= dt;
     comboTimer -= dt;
-    fireCooldown -= dt;
+    if (!renderer.xr.isPresenting) fireCooldown -= dt;
     if (comboTimer <= 0) combo = 1;
     if (timeLeft <= 0) finishRound();
     hud.setStats(score, combo, timeLeft);

@@ -139,8 +139,7 @@ ul {
   align-items: center;
 }
 
-button,
-#vr-slot button {
+button {
   appearance: none;
   border: 0;
   background: var(--accent);
@@ -151,16 +150,31 @@ button,
   cursor: pointer;
 }
 
-button.ghost,
-#vr-slot button {
+button.ghost {
   background: transparent;
   color: var(--ink);
   border: 1px solid var(--line);
 }
 
-.vr-slot {
-  display: flex;
-  align-items: center;
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.status {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status[data-state="ready"],
+.status[data-state="presenting"] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 body.in-xr #hud,

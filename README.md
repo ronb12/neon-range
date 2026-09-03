@@ -2,39 +2,30 @@
 
 A seated WebXR target gallery. Point a ray, pull the trigger, chase combo.
 
-## Play on a headset
+## Headset already connected
 
-WebXR needs a secure context. On the headset itself that means **HTTPS** (or `localhost`).
+Use the PC the headset is attached to (Meta Link, Air Link, SteamVR, or OpenXR).
 
 ```bash
 npm install
-npm run dev:headset
-```
-
-That serves HTTPS on port `43178`. In the Quest (or other XR) browser:
-
-1. Open the Network URL Vite prints (`https://<your-lan-ip>:43178`).
-2. Accept the self-signed certificate warning once.
-3. Tap **Put on headset** / **ENTER VR**.
-4. Aim the controller laser at **SHOOT TO START** and squeeze trigger.
-
-Quest Browser can also **Add to Apps** from the page menu so the range sits on the library shelf like a PWA.
-
-If you only want a desktop preview (HTTP):
-
-```bash
 npm run dev
 ```
+
+Open **Chrome or Edge** at `http://localhost:43177` (localhost is a secure context). Wake the headset, then click **Enter VR**. The round starts in the HMD.
+
+If this page is inside an embedded preview, WebXR often cannot see the headset — open the same URL in a real Chrome/Edge window.
+
+Quest Browser (no PC link): `npm run dev:headset` and open the HTTPS LAN URL in the headset.
 
 ## Controls
 
 | Surface | Aim | Fire |
 | --- | --- | --- |
-| Headset | Controller laser | Trigger |
+| Headset | Controller laser | Trigger (or squeeze) |
 | Desktop | Mouse | Click / hold |
 
-Round length is 45 seconds. Hits add combo; a miss resets it. Distant targets pay a small bonus. The HTML HUD hides in VR — score lives on the back-wall board.
+Round length is 45 seconds. Hits add combo; a miss resets it. Score lives on the back-wall board while you are in VR.
 
 ## Stack
 
-Vite, TypeScript, Three.js (`WebGLRenderer.xr`, `local-floor`, VR controllers, haptics).
+Vite, TypeScript, Three.js WebXR (`immersive-vr`, controller rays, trigger polling, haptics).

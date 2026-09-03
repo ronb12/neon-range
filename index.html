@@ -27,20 +27,19 @@
 
     <div id="overlay" class="panel">
       <p class="eyebrow">The 5-minute WebXR shooter</p>
+      <p id="xr-status" class="status" data-state="checking">Looking for a headset…</p>
       <h1>Point. Trigger. Score.</h1>
       <p class="lede">
-        A seated gallery range — no locomotion, no inventory, no netcode.
-        This is the shooting game you can actually ship in WebXR in an afternoon,
-        and play in five minutes.
+        If the headset is already connected to this computer, click Enter VR.
+        The range starts in the headset — trigger to shoot.
       </p>
       <ul>
-        <li>Headset: Put on headset, then shoot the start plate.</li>
-        <li>Desktop: click targets. Hold click to rapid-fire.</li>
+        <li>Connected HMD: Chrome or Edge, headset awake, then Enter VR.</li>
+        <li>Desktop only: Play on desktop and click targets.</li>
       </ul>
       <div class="actions">
-        <button type="button" id="headset">Put on headset</button>
+        <button type="button" id="headset">Enter VR</button>
         <button type="button" id="start" class="ghost">Play on desktop</button>
-        <div id="vr-slot" class="vr-slot"></div>
       </div>
       <p class="hint" id="xr-hint"></p>
     </div>

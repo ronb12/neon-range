@@ -7,7 +7,8 @@ export class Hud {
   readonly endTitle = document.querySelector("#end-title")!;
   readonly endCopy = document.querySelector("#end-copy")!;
   readonly xrHint = document.querySelector("#xr-hint")!;
-  readonly vrSlot = document.querySelector("#vr-slot")!;
+  readonly xrStatus = document.querySelector("#xr-status") as HTMLElement;
+  readonly headsetBtn = document.querySelector("#headset") as HTMLButtonElement;
 
   setPlaying(playing: boolean) {
     this.overlay.classList.toggle("hidden", playing);
@@ -27,9 +28,39 @@ export class Hud {
     this.endCopy.textContent = `${score} points · ${hits} hits · best combo x${bestCombo}. Same loop, tighter aim.`;
   }
 
-  setXrHint(supported: boolean) {
-    this.xrHint.textContent = supported
-      ? "This browser can enter VR. Put the headset on, then shoot the start plate."
-      : "Open this page in the Quest (or other XR) browser over HTTPS, then tap Put on headset.";
+  setHeadsetState(
+    state: "checking" | "ready" | "presenting" | "unsupported" | "insecure" | "no-api",
+    detail?: string,
+  ) {
+    const labels = {
+      checking: "Looking for a headset…",
+      ready: "Headset connected",
+      presenting: "Inside the headset",
+      unsupported: "No headset on this browser",
+      insecure: "Needs localhost or HTTPS",
+      "no-api": "This browser has no WebXR",
+    };
+    this.xrStatus.textContent = labels[state];
+    this.xrStatus.dataset.state = state;
+    this.headsetBtn.disabled = state === "presenting" || state === "checking";
+    this.headsetBtn.textContent = state === "presenting" ? "In headset" : "Enter VR";
+
+    if (detail) {
+      this.xrHint.textContent = detail;
+      return;
+    }
+    if (state === "ready") {
+      this.xrHint.textContent =
+        "Headset is on this computer. Click Enter VR — the range starts in the HMD.";
+    } else if (state === "presenting") {
+      this.xrHint.textContent = "Look forward. Trigger shoots. Score is on the far board.";
+    } else if (state === "insecure") {
+      this.xrHint.textContent = "Open this page as http://localhost or HTTPS, then click Enter VR.";
+    } else if (state === "no-api") {
+      this.xrHint.textContent = "Use Chrome or Edge with WebXR, not an embedded preview.";
+    } else {
+      this.xrHint.textContent =
+        "Wake the headset in Meta Link, SteamVR, or OpenXR so Chrome can see it. Quest Browser also works over HTTPS.";
+    }
   }
 }
