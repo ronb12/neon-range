@@ -3,6 +3,7 @@ import * as THREE from "three";
 type Spark = { pos: THREE.Vector3; vel: THREE.Vector3; t: number; color: THREE.Color };
 type Floater = { sprite: THREE.Sprite; t: number };
 type Bolt = { line: THREE.Line; t: number };
+type Splat = { mesh: THREE.Mesh; t: number };
 
 export class Fx {
   private readonly dummy = new THREE.Object3D();
@@ -10,6 +11,7 @@ export class Fx {
   private readonly sparkLife: Spark[] = [];
   private readonly floaters: Floater[] = [];
   private readonly bolts: Bolt[] = [];
+  private readonly splats: Splat[] = [];
   private readonly scene: THREE.Scene;
 
   constructor(scene: THREE.Scene) {
@@ -36,11 +38,25 @@ export class Fx {
     }
   }
 
-  bolt(from: THREE.Vector3, to: THREE.Vector3, hex = 0xfff3a1) {
+  bolt(from: THREE.Vector3, to: THREE.Vector3, hex = 0x7af6ff) {
     const geo = new THREE.BufferGeometry().setFromPoints([from, to]);
-    const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 1 }));
+    const line = new THREE.Line(
+      geo,
+      new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 1 }),
+    );
     this.scene.add(line);
-    this.bolts.push({ line, t: 0.09 });
+    this.bolts.push({ line, t: 0.12 });
+  }
+
+  splat(at: THREE.Vector3, hex = 0x39e7ff) {
+    const mesh = new THREE.Mesh(
+      new THREE.CircleGeometry(0.09, 12),
+      new THREE.MeshBasicMaterial({ color: hex, transparent: true, opacity: 0.85, side: THREE.DoubleSide }),
+    );
+    mesh.position.copy(at);
+    mesh.lookAt(at.x, at.y, at.z + 1);
+    this.scene.add(mesh);
+    this.splats.push({ mesh, t: 2.4 });
   }
 
   floatScore(at: THREE.Vector3, text: string, hex: number) {
@@ -96,12 +112,24 @@ export class Fx {
     for (let i = this.bolts.length - 1; i >= 0; i--) {
       const b = this.bolts[i];
       b.t -= dt;
-      (b.line.material as THREE.LineBasicMaterial).opacity = Math.max(0, b.t / 0.09);
+      (b.line.material as THREE.LineBasicMaterial).opacity = Math.max(0, b.t / 0.12);
       if (b.t <= 0) {
         this.scene.remove(b.line);
         b.line.geometry.dispose();
         (b.line.material as THREE.LineBasicMaterial).dispose();
         this.bolts.splice(i, 1);
+      }
+    }
+
+    for (let i = this.splats.length - 1; i >= 0; i--) {
+      const s = this.splats[i];
+      s.t -= dt;
+      (s.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, s.t / 2.4);
+      if (s.t <= 0) {
+        this.scene.remove(s.mesh);
+        s.mesh.geometry.dispose();
+        (s.mesh.material as THREE.MeshBasicMaterial).dispose();
+        this.splats.splice(i, 1);
       }
     }
   }

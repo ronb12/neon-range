@@ -1,5 +1,20 @@
+const FILES = {
+  laser0: "/assets/audio/laserSmall_000.ogg",
+  laser1: "/assets/audio/laserSmall_001.ogg",
+  laser2: "/assets/audio/laserSmall_002.ogg",
+  laserGold: "/assets/audio/laserLarge_000.ogg",
+  hit0: "/assets/audio/impactMetal_000.ogg",
+  hit1: "/assets/audio/impactMetal_001.ogg",
+  hit2: "/assets/audio/impactMetal_002.ogg",
+  boom: "/assets/audio/explosionCrunch_000.ogg",
+} as const;
+
+type Cue = keyof typeof FILES;
+
 export class RangeAudio {
   private ctx: AudioContext | null = null;
+  private buffers = new Map<Cue, AudioBuffer>();
+  private ready = false;
 
   private ensure() {
     if (!this.ctx) this.ctx = new AudioContext();
@@ -7,52 +22,67 @@ export class RangeAudio {
     return this.ctx;
   }
 
-  tone(freq: number, duration: number, type: OscillatorType, gain = 0.08, slide = 0) {
+  async load() {
+    this.ensure();
+    await Promise.all(
+      (Object.keys(FILES) as Cue[]).map(async (key) => {
+        const res = await fetch(FILES[key]);
+        const raw = await res.arrayBuffer();
+        const buf = await this.ensure().decodeAudioData(raw.slice(0));
+        this.buffers.set(key, buf);
+      }),
+    );
+    this.ready = true;
+  }
+
+  private play(cue: Cue, volume = 0.45, rate = 1) {
+    if (!this.ready) return;
     const ctx = this.ensure();
-    const osc = ctx.createOscillator();
-    const amp = ctx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), ctx.currentTime + duration);
-    amp.gain.setValueAtTime(gain, ctx.currentTime);
-    amp.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
-    osc.connect(amp);
-    amp.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
+    const buffer = this.buffers.get(cue);
+    if (!buffer) return;
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    src.buffer = buffer;
+    src.playbackRate.value = rate;
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
   }
 
   fire() {
-    this.tone(880, 0.05, "square", 0.035, -420);
-    this.tone(190, 0.07, "sawtooth", 0.02);
+    const n = Math.floor(Math.random() * 3) as 0 | 1 | 2;
+    this.play((["laser0", "laser1", "laser2"] as const)[n], 0.38, 0.96 + Math.random() * 0.1);
   }
 
   hit(combo: number, bullseye: boolean) {
-    this.tone(520 + combo * 36, 0.11, "triangle", 0.09);
-    if (bullseye) this.tone(980, 0.14, "sine", 0.06);
-    if (combo === 5 || combo === 8 || combo === 12) this.tone(660, 0.22, "square", 0.05);
+    const n = Math.floor(Math.random() * 3) as 0 | 1 | 2;
+    this.play((["hit0", "hit1", "hit2"] as const)[n], bullseye ? 0.55 : 0.42, 1 + combo * 0.02);
   }
 
   gold() {
-    this.tone(740, 0.16, "triangle", 0.08);
-    this.tone(1100, 0.12, "sine", 0.05);
+    this.play("laserGold", 0.4, 1.08);
+    this.play("hit0", 0.35, 1.2);
   }
 
   miss() {
-    this.tone(128, 0.1, "sawtooth", 0.028, -40);
+    this.play("hit2", 0.18, 0.7);
   }
 
   count(n: number) {
-    this.tone(n === 0 ? 620 : 280 + n * 40, n === 0 ? 0.22 : 0.12, "sine", 0.07);
+    this.play(n === 0 ? "laserGold" : "laser0", 0.28, n === 0 ? 0.7 : 0.85 + n * 0.05);
   }
 
   end() {
-    this.tone(330, 0.18, "sine", 0.05);
-    this.tone(220, 0.28, "triangle", 0.04, -80);
+    this.play("boom", 0.32, 0.85);
   }
 
   record() {
-    this.tone(520, 0.12, "sine", 0.06);
-    this.tone(780, 0.2, "triangle", 0.05);
+    this.play("laserGold", 0.4, 0.8);
+    this.play("hit0", 0.3, 1.4);
+  }
+
+  decoy() {
+    this.play("boom", 0.22, 1.3);
   }
 }
